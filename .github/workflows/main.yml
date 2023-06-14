@@ -23,6 +23,7 @@ jobs:
       uses: android-actions/setup-android@v2
       with:
         sdk-platform: '30'
+        build-tools: '30.0.3'
 
     - name: Create necessary directories
       run: |
@@ -34,9 +35,11 @@ jobs:
     - name: Copy HTML file
       run: cp index.html AndroidTest/assets/
 
-    - name: Create strings.xml file
-      run: echo '<resources><string name="myApplicationName">My App Name</string></resources>' > AndroidTest/res/values/strings.xml
+    - name: Generate keystore
+      run: |
+        keytool -genkeypair -validity 10000 -dname "CN=company name, OU=organisational unit, O=organisation, L=location, S=state, C=country code" -keystore AndroidTest.keystore -storepass password -keypass password -alias AndroidTestKey -keyalg RSA -v
 
+  
     - name: Create MyActivity.java file
       run: |
         echo 'package com.tt.rnd;' > AndroidTest/src/com/tt/rnd/MyActivity.java
