@@ -1,0 +1,65 @@
+name: HTML to APK Conversion
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+        
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          sdk-platform: '30'
+          ndk-version: '21.3.6528147'
+        
+      - name: Create Directories
+        run: |
+          mkdir -p AndroidTest/src/com/tt/rnd
+          mkdir -p AndroidTest/res/drawable
+          mkdir -p AndroidTest/res/values
+        
+      - name: Copy HTML File
+        run: cp index.html AndroidTest/assets/index.html
+        
+      - name: Create string.xml
+        run: |
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="myApplicationName">My App Name</string></resources>' > AndroidTest/res/values/strings.xml
+        
+      - name: Create MyActivity.java
+        run: |
+          echo 'package com.tt.rnd;\nimport android.app.Activity;\nimport android.content.res.Resources;\nimport android.os.Bundle;\nimport android.webkit.WebSettings;\nimport android.webkit.WebView;\n\npublic class MyActivity extends Activity {\n@Override\npublic void onCreate(Bundle savedInstanceState) {\nsuper.onCreate(savedInstanceState);\nWebView webview = new WebView(this);\nwebview.getSettings().setJavaScriptEnabled(true);\nWebSettings webSettings = webview.getSettings();\nwebSettings.setJavaScriptEnabled(true);\nwebview.loadUrl("file:///android_asset/index.html");\nsetContentView(webview);\n}\n}' > AndroidTest/src/com/tt/rnd/MyActivity.java
+        
+      - name: Create AndroidManifest.xml
+        run: |
+          echo '<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.mycompany.package1" android:versionCode="1" android:versionName="1.0"><uses-permission android:name="android.permission.INTERNET"/><uses-sdk android:minSdkVersion="8" android:targetSdkVersion="15"/><application android:icon="@drawable/mylogo" android:label="@string/myApplicationName"><activity android:name="com.tt.rnd.MyActivity" android:label="@string/myApplicationName"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity></application></manifest>' > AndroidTest/AndroidManifest.xml
+        
+      - name: Build APK
+        run: |
+          cd AndroidTest
+          $ANDROID_HOME/platform-tools/aapt package -v -f -A assets -S res -I $ANDROID_HOME/platforms/android-30/android.jar -M AndroidManifest.xml -F AndroidTest.unsigned.apk .
+        
+      - name: Sign APK
+        run: |
+          $JAVA_HOME/bin/keytool -genkeypair -validity 10000 -dname "CN=company name, OU=organisational unit, O=organisation, L=location, S=state, C=country code" -keystore AndroidTest.keystore -storepass password -keypass password -alias AndroidTestKey -keyalg RSA -v
+          $JAVA_HOME/bin/jarsigner -verbose -keystore AndroidTest.keystore -storepass password -keypass password -signedjar AndroidTest.signed.apk AndroidTest.unsigned.apk AndroidTestKey
+        
+      - name: Zip-align APK
+        run: $ANDROID_HOME/tools/zipalign -v 4 AndroidTest.signed.apk AndroidTest.apk
+        
+      - name: Upload APK
+        uses: actions/upload-artifact@v2
+        with:
+          name: Android APK
+          path: AndroidTest.apk
