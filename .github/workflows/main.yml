@@ -29,6 +29,7 @@ jobs:
         mkdir -p AndroidTest/res/drawable
         mkdir -p AndroidTest/res/values
         mkdir -p AndroidTest/src/com/tt/rnd
+        mkdir -p AndroidTest/assets
 
     - name: Copy HTML file
       run: cp index.html AndroidTest/assets/
