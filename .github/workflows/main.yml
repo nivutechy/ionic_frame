@@ -1,0 +1,35 @@
+name: Convert HTML to APK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 14
+
+    - name: Install Ionic CLI
+      run: npm install -g @ionic/cli
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build APK
+      run: ionic cordova build android --prod
+
+    - name: Archive APK
+      uses: actions/upload-artifact@v2
+      with:
+        name: apk
+        path: platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
