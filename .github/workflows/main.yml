@@ -1,4 +1,4 @@
-name: HTML to APK Conversion
+name: HTML to APK
 
 on:
   push:
@@ -10,56 +10,85 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Setup Java
-        uses: actions/setup-java@v2
-        with:
-          java-version: '11'
-        
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
-        with:
-          sdk-platform: '30'
-          ndk-version: '21.3.6528147'
-        
-      - name: Create Directories
-        run: |
-          mkdir -p AndroidTest/src/com/tt/rnd
-          mkdir -p AndroidTest/res/drawable
-          mkdir -p AndroidTest/res/values
-        
-      - name: Copy HTML File
-        run: cp index.html AndroidTest/assets/index.html
-        
-      - name: Create string.xml
-        run: |
-          echo '<?xml version="1.0" encoding="utf-8"?><resources><string name="myApplicationName">My App Name</string></resources>' > AndroidTest/res/values/strings.xml
-        
-      - name: Create MyActivity.java
-        run: |
-          echo 'package com.tt.rnd;\nimport android.app.Activity;\nimport android.content.res.Resources;\nimport android.os.Bundle;\nimport android.webkit.WebSettings;\nimport android.webkit.WebView;\n\npublic class MyActivity extends Activity {\n@Override\npublic void onCreate(Bundle savedInstanceState) {\nsuper.onCreate(savedInstanceState);\nWebView webview = new WebView(this);\nwebview.getSettings().setJavaScriptEnabled(true);\nWebSettings webSettings = webview.getSettings();\nwebSettings.setJavaScriptEnabled(true);\nwebview.loadUrl("file:///android_asset/index.html");\nsetContentView(webview);\n}\n}' > AndroidTest/src/com/tt/rnd/MyActivity.java
-        
-      - name: Create AndroidManifest.xml
-        run: |
-          echo '<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.mycompany.package1" android:versionCode="1" android:versionName="1.0"><uses-permission android:name="android.permission.INTERNET"/><uses-sdk android:minSdkVersion="8" android:targetSdkVersion="15"/><application android:icon="@drawable/mylogo" android:label="@string/myApplicationName"><activity android:name="com.tt.rnd.MyActivity" android:label="@string/myApplicationName"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity></application></manifest>' > AndroidTest/AndroidManifest.xml
-        
-      - name: Build APK
-        run: |
-          cd AndroidTest
-          $ANDROID_HOME/platform-tools/aapt package -v -f -A assets -S res -I $ANDROID_HOME/platforms/android-30/android.jar -M AndroidManifest.xml -F AndroidTest.unsigned.apk .
-        
-      - name: Sign APK
-        run: |
-          $JAVA_HOME/bin/keytool -genkeypair -validity 10000 -dname "CN=company name, OU=organisational unit, O=organisation, L=location, S=state, C=country code" -keystore AndroidTest.keystore -storepass password -keypass password -alias AndroidTestKey -keyalg RSA -v
-          $JAVA_HOME/bin/jarsigner -verbose -keystore AndroidTest.keystore -storepass password -keypass password -signedjar AndroidTest.signed.apk AndroidTest.unsigned.apk AndroidTestKey
-        
-      - name: Zip-align APK
-        run: $ANDROID_HOME/tools/zipalign -v 4 AndroidTest.signed.apk AndroidTest.apk
-        
-      - name: Upload APK
-        uses: actions/upload-artifact@v2
-        with:
-          name: Android APK
-          path: AndroidTest.apk
+    - name: Setup Java
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+      with:
+        sdk-platform: '30'
+
+    - name: Create necessary directories
+      run: |
+        mkdir -p AndroidTest/res/drawable
+        mkdir -p AndroidTest/res/values
+        mkdir -p AndroidTest/src/com/tt/rnd
+
+    - name: Copy HTML file
+      run: cp index.html AndroidTest/assets/
+
+    - name: Create strings.xml file
+      run: echo '<resources><string name="myApplicationName">My App Name</string></resources>' > AndroidTest/res/values/strings.xml
+
+    - name: Create MyActivity.java file
+      run: |
+        echo 'package com.tt.rnd;' > AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo 'import android.app.Activity;' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo 'import android.content.res.Resources;' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo 'import android.os.Bundle;' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo 'import android.webkit.WebSettings;' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo 'import android.webkit.WebView;' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo 'public class MyActivity extends Activity {' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '    @Override' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '    public void onCreate(Bundle savedInstanceState) {' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '        super.onCreate(savedInstanceState);' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '        WebView webview = new WebView(this);' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '        webview.getSettings().setJavaScriptEnabled(true);' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '        WebSettings webSettings = webview.getSettings();' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '        webSettings.setJavaScriptEnabled(true);' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '        webview.loadUrl("file:///android_asset/index.html");' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '        setContentView(webview);' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '    }' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+        echo '}' >> AndroidTest/src/com/tt/rnd/MyActivity.java
+
+    - name: Create AndroidManifest.xml file
+      run: |
+        echo '<?xml version="1.0" encoding="utf-8"?>' > AndroidTest/AndroidManifest.xml
+        echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android"' >> AndroidTest/AndroidManifest.xml
+        echo '    package="com.mycompany.package1"' >> AndroidTest/AndroidManifest.xml
+        echo '    android:versionCode="1"' >> AndroidTest/AndroidManifest.xml
+        echo '    android:versionName="1.0">' >> AndroidTest/AndroidManifest.xml
+        echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> AndroidTest/AndroidManifest.xml
+        echo '    <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="15"/>' >> AndroidTest/AndroidManifest.xml
+        echo '    <application android:icon="@drawable/mylogo" android:label="@string/myApplicationName">' >> AndroidTest/AndroidManifest.xml
+        echo '        <activity android:name="com.tt.rnd.MyActivity" android:label="@string/myApplicationName">' >> AndroidTest/AndroidManifest.xml
+        echo '            <intent-filter>' >> AndroidTest/AndroidManifest.xml
+        echo '                <action android:name="android.intent.action.MAIN" />' >> AndroidTest/AndroidManifest.xml
+        echo '                <category android:name="android.intent.category.LAUNCHER" />' >> AndroidTest/AndroidManifest.xml
+        echo '            </intent-filter>' >> AndroidTest/AndroidManifest.xml
+        echo '        </activity>' >> AndroidTest/AndroidManifest.xml
+        echo '    </application>' >> AndroidTest/AndroidManifest.xml
+        echo '</manifest>' >> AndroidTest/AndroidManifest.xml
+
+    - name: Generate APK
+      run: |
+        keytool -genkeypair -validity 10000 -dname "CN=company name, OU=organisational unit, O=organisation, L=location, S=state, C=country code" -keystore AndroidTest.keystore -storepass password -keypass password -alias AndroidTestKey -keyalg RSA -v
+        aapt package -v -f -m -S AndroidTest/res -A AndroidTest/assets -J AndroidTest/src -M AndroidTest/AndroidManifest.xml -I $ANDROID_HOME/platforms/android-30/android.jar
+        javac -verbose -d AndroidTest/obj -classpath $ANDROID_HOME/platforms/android-30/android.jar;AndroidTest/obj -sourcepath AndroidTest/src AndroidTest/src/com/tt/rnd/*.java
+        $ANDROID_HOME/build-tools/{version}/dx --dex --verbose --output=AndroidTest/bin/classes.dex AndroidTest/obj AndroidTest/lib
+        aapt package -v -f -A AndroidTest/assets -M AndroidTest/AndroidManifest.xml -S AndroidTest/res -I $ANDROID_HOME/platforms/android-30/android.jar -F AndroidTest/bin/AndroidTest.unsigned.apk AndroidTest/bin
+        jarsigner -verbose -keystore AndroidTest.keystore -storepass password -keypass password -signedjar AndroidTest/bin/AndroidTest.signed.apk AndroidTest/bin/AndroidTest.unsigned.apk AndroidTestKey
+        $ANDROID_HOME/build-tools/{version}/zipalign -v 4 AndroidTest/bin/AndroidTest.signed.apk AndroidTest/bin/AndroidTest.apk
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: app-apk
+        path: AndroidTest/bin/AndroidTest.apk
